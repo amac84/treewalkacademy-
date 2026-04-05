@@ -182,6 +182,10 @@ export const AppStoreProvider = ({ children }: { children: ReactNode }) => {
   )
 
   const issueInvite = useCallback((email: string, role: UserRole): Invite => {
+    if (currentUserRole !== 'hr_admin' && currentUserRole !== 'super_admin') {
+      throw new Error('Only HR Admin or Super Admin can issue invites.')
+    }
+
     const invite: Invite = {
       id: createId('inv'),
       email,
@@ -194,7 +198,7 @@ export const AppStoreProvider = ({ children }: { children: ReactNode }) => {
 
     setState((prev) => ({ ...prev, invites: [invite, ...prev.invites] }))
     return invite
-  }, [currentUserId])
+  }, [currentUserId, currentUserRole])
 
   const inviteUser = useCallback(
     (email: string, _fullName: string, role: UserRole): Invite => issueInvite(email, role),
