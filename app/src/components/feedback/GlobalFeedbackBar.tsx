@@ -7,6 +7,8 @@ type SubmitStatus = 'idle' | 'saving' | 'success' | 'error'
 
 const IMAGE_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp,image/gif'
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+/** Keep in sync with `MAX_MESSAGE_LENGTH` in `supabase/functions/create-linear-ticket/index.ts`. */
+const MAX_MESSAGE_LENGTH = 8000
 
 const ALLOWED_IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'])
 
@@ -128,6 +130,7 @@ function pickImageFileFromDataTransfer(data: DataTransfer | null): File | null {
 export function GlobalFeedbackBar() {
   const location = useLocation()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const messageRef = useRef<HTMLTextAreaElement>(null)
   const [message, setMessage] = useState('')
   const [attachment, setAttachment] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -145,6 +148,19 @@ export function GlobalFeedbackBar() {
       URL.revokeObjectURL(url)
     }
   }, [attachment])
+
+  const syncMessageHeight = useCallback(() => {
+    const el = messageRef.current
+    if (!el) {
+      return
+    }
+    el.style.height = '0px'
+    el.style.height = `${el.scrollHeight}px`
+  }, [])
+
+  useLayoutEffect(() => {
+    syncMessageHeight()
+  }, [message, syncMessageHeight])
 
   function clearAttachment() {
     setAttachment(null)
@@ -257,10 +273,12 @@ export function GlobalFeedbackBar() {
             </div>
           ) : null}
           <div className="feedback-bar-input-wrap">
-            <input
+            <textarea
+              ref={messageRef}
               id="feedback-message"
               name="message"
               value={message}
+              rows={1}
               onChange={(event) => {
                 setMessage(event.target.value)
                 if (status !== 'idle') {
@@ -270,7 +288,7 @@ export function GlobalFeedbackBar() {
               }}
               placeholder="Describe what happened, or paste a screenshot (Ctrl+V)…"
               autoComplete="off"
-              maxLength={500}
+              maxLength={MAX_MESSAGE_LENGTH}
               aria-label="Bug report"
             />
           </div>
